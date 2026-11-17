@@ -89,12 +89,12 @@ def shell(title, description, body, canonical=""):
 <title>{escape(title)}</title>
 <meta name="description" content="{escape(description)}">
 {canon}
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-<header class="top"><a class="brand" href="/">Pomonete</a><span>Аналитика для селлеров Яндекс Маркета</span></header>
+<header class="top"><a class="brand" href="./">Pomonete</a><span>Аналитика для селлеров Яндекс Маркета</span></header>
 {body}
-<footer class="foot"><a href="/">Все разборы</a><span>Редакция Pomonete</span></footer>
+<footer class="foot"><a href="./">Все разборы</a><span>Редакция Pomonete</span></footer>
 </body>
 </html>
 """
@@ -102,7 +102,7 @@ def shell(title, description, body, canonical=""):
 
 def link_list(entries):
     return '<ul class="links">' + "".join(
-        f'<li><a href="/{article.slug}.html">{escape(article.title)}</a></li>' for article in entries
+        f'<li><a href="./{article.slug}.html">{escape(article.title)}</a></li>' for article in entries
     ) + '</ul>'
 
 
@@ -126,7 +126,7 @@ def render_article(article, same_category, host, images):
     offset = sum(map(ord, article.slug)) % len(nearby)
     related = (nearby + nearby)[offset:offset + 2]
     if images:
-        exhibit = (f'<figure><img src="/figures/{article.slug}.png" width="960" height="{images[article.slug]}" '
+        exhibit = (f'<figure><img src="./figures/{article.slug}.png" width="960" height="{images[article.slug]}" '
                    f'alt="{escape(model.headline)}"><figcaption>Таблица расчёта на условных данных.</figcaption></figure>')
     else:
         exhibit = ""
@@ -134,7 +134,7 @@ def render_article(article, same_category, host, images):
     body = f"""<main class="content">
 <article>
 <header>
-<p class="cred"><a href="/#{article.category}">{escape(article_title)}</a></p>
+<p class="cred"><a href="./#{article.category}">{escape(article_title)}</a></p>
 <h1>{escape(title)}</h1>
 <p class="cred">Разбор команды Pomonete. Данные учебного примера условные.</p>
 <p class="lead">{escape(opener)}</p>
