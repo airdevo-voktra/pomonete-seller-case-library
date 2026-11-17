@@ -100,9 +100,9 @@ def shell(title, description, body, canonical=""):
 """
 
 
-def link_list(entries):
+def link_list(entries, url_suffix):
     return '<ul class="links">' + "".join(
-        f'<li><a href="./{article.slug}.html">{escape(article.title)}</a></li>' for article in entries
+        f'<li><a href="./{article.slug}{url_suffix}">{escape(article.title)}</a></li>' for article in entries
     ) + '</ul>'
 
 
@@ -114,7 +114,7 @@ def closing_checks(article):
     )
 
 
-def render_article(article, same_category, host, images):
+def render_article(article, same_category, host, images, url_suffix):
     title, opener, audit, decision, model = article.title, article.opener, article.audit, article.decision, article.model
     checks = closing_checks(article)
     core = [opener, model.arithmetic, model.boundary, model.stress, model.scope, audit, model.evidence,
@@ -161,17 +161,17 @@ def render_article(article, same_category, host, images):
 <p>{escape(checks[1])}</p>
 <p class="sources"><a href="{source}">Справка Яндекс Маркета</a> · <a href="https://pomonete.ru/">Финансовая аналитика Pomonete</a></p>
 </article>
-<aside class="browse" aria-label="Похожие разборы"><h2>По теме</h2>{link_list(related)}</aside>
+<aside class="browse" aria-label="Похожие разборы"><h2>По теме</h2>{link_list(related, url_suffix)}</aside>
 </main>"""
-    return shell(title, desc, body, f"{host}/{article.slug}.html" if host else ""), actual
+    return shell(title, desc, body, f"{host}/{article.slug}{url_suffix}" if host else ""), actual
 
 
-def render_catalog(entries, host, title):
+def render_catalog(entries, host, title, url_suffix):
     categories = {}
     for entry in entries:
         categories.setdefault(entry.category, []).append(entry)
     groups = "".join(
-        f'<section class="group" id="{category}"><h2>{escape(CATEGORIES[category][0])}</h2>{link_list(articles)}</section>'
+        f'<section class="group" id="{category}"><h2>{escape(CATEGORIES[category][0])}</h2>{link_list(articles, url_suffix)}</section>'
         for category, articles in categories.items()
     )
     lead = "Практические расчёты и проверки для продавцов Яндекс Маркета. Каждый разбор отвечает на один вопрос и показывает, какие данные подставить из своего магазина."
@@ -204,8 +204,8 @@ def screenshot_figures(entries, output):
     return heights
 
 
-def sitemap(output, selected, host):
-    addresses = [host + "/"] + [f"{host}/{article.slug}.html" for article in selected]
+def sitemap(output, selected, host, url_suffix):
+    addresses = [host + "/"] + [f"{host}/{article.slug}{url_suffix}" for article in selected]
     urls = Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
     for address in addresses:
         SubElement(SubElement(urls, "url"), "loc").text = address
@@ -220,25 +220,27 @@ def main():
     parser.add_argument("--host", default="")
     parser.add_argument("--title", default="Считаем деньги на Яндекс Маркете")
     parser.add_argument("--images", action="store_true")
+    parser.add_argument("--clean-urls", action="store_true")
     args = parser.parse_args()
     selected = [article for article in read_articles() if article.category in args.categories.split(",")]
     assert selected and len({a.slug for a in selected}) == len(selected)
     output = args.out
     output.mkdir(exist_ok=True, parents=True)
     host = args.host.rstrip("/")
+    url_suffix = "" if args.clean_urls else ".html"
     heights = screenshot_figures(selected, output) if args.images else {}
     output.joinpath("styles.css").write_text(CSS)
-    output.joinpath("index.html").write_text(render_catalog(selected, host, args.title))
+    output.joinpath("index.html").write_text(render_catalog(selected, host, args.title, url_suffix))
     count = {}
     for article in selected:
         related = [item for item in selected if item.category == article.category]
-        html, length = render_article(article, related, host, heights)
+        html, length = render_article(article, related, host, heights, url_suffix)
         assert "—" not in html
         assert length >= 5000, (article.slug, length)
         output.joinpath(f"{article.slug}.html").write_text(html)
         count[article.slug] = length
     if host:
-        sitemap(output, selected, host)
+        sitemap(output, selected, host, url_suffix)
     else:
         output.joinpath("robots.txt").write_text("User-agent: *\nAllow: /\n")
     print(f"{len(count)} статей, {min(count.values())}–{max(count.values())} знаков без пробелов")
